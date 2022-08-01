@@ -88,7 +88,7 @@ public:
         return m_username;
     }
 
-    virtual void connect(const std::string & username, const std::string & address, uint16_t port) override // throws exception
+    virtual void connect(const std::string username, const std::string address, uint16_t port) override // throws exception
     {
         m_username = username;
         m_sockfd = socket(AF_INET, SOCK_DGRAM, 0);
@@ -112,7 +112,6 @@ public:
             sendto(m_sockfd, buffer, packetLength+2,
                    MSG_CONFIRM, (const struct sockaddr *) &m_sockAddrIn,
                    sizeof(m_sockAddrIn));
-            delete[] packetLengthPtr;
             LOG(m_username<< "\nHello message sent");
         }
         threadListen();
@@ -142,12 +141,11 @@ public:
                         cereal::BinaryInputArchive iarchive(sBuf);
                         iarchive(command, username, delim1, addressOrMessage, delim2, port);
                     }
-                    LOG(command <<", "<<username<<", "<<addressOrMessage<<", "<<port);
+                    LOG("Just unarchived: "<<command <<", "<<username<<", "<<addressOrMessage<<", "<<port);
                     switch (command) {
                     case 'u':
                         LOG("now online: "<<username<<", "<<addressOrMessage<<", "<<port);
                         m_clientmap[username] = {addressOrMessage, static_cast<in_port_t>(std::stoi(port))};
-                        LOG("I will evoke m_delegate");
                         m_delegate.onUserConnected(username);
                       break;
                     case 'd':
@@ -227,21 +225,16 @@ public:
         uint16_t * packetLengthPtr = reinterpret_cast<uint16_t *>(buffer);
         * packetLengthPtr = packetLength;
         std::memcpy(buffer + 2, ss.str().c_str(), packetLength);
-
-        m_delegate.onUserConnected(messText);
-//        if(destName == "All")
-//        {
-//            sendToOldClients(buffer, packetLength+2);
-//        }
-//        else
-//        {
-//            sendMessageToClient(destName, buffer, packetLength+2);
-//        }
+        if(destName == "All")
+        {
+            sendToOldClients(buffer, packetLength+2);
+        }
+        else
+        {
+            sendMessageToClient(destName, buffer, packetLength+2);
+        }
 
     }
-
-   //members of Mainwindow
-
 };
 
 std::shared_ptr<IMessenger> createUdpMessenger(MessengerDelegate & mDel)

@@ -47,7 +47,9 @@ private slots:
 
     void addUserSlot(const QString user);
 
+    void deleteUserSlot(const QString user);
 signals:
     void appendMessageText(QString temp);
     void addUser(QString user);
+    void deleteUser(QString user);
 };

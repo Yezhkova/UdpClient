@@ -16,15 +16,11 @@ MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
 {
-//    m_messenger = createUdpMessenger(*this);
-
     ui->setupUi(this);
     connect(this, &MainWindow::appendMessageText, ui->feed, &QTextEdit::append);
     connect(this, &MainWindow::addUser, this, &MainWindow::addUserSlot);
-
+    connect(this, &MainWindow::deleteUser, this, &::MainWindow::deleteUserSlot);
     m_messenger = createUdpMessenger(*this);
-//    m_messenger = std::make_shared<Msg>(*this);
-
 }
 
 MainWindow::~MainWindow()
@@ -32,22 +28,23 @@ MainWindow::~MainWindow()
     delete ui;
 }
 
-void MainWindow::addUserSlot(QString user)
+void MainWindow::addUserSlot(const QString user)
 {
     ui->sessionsList->addItem(user);
+}
+
+void MainWindow::deleteUserSlot(const QString user)
+{
+    QList <QListWidgetItem *> list = ui->sessionsList->findItems(user, Qt::MatchCaseSensitive);
+    int r = ui->sessionsList->row(list[0]);
+    QListWidgetItem *it = ui->sessionsList->takeItem(r);
+    delete it;
 }
 
 
 void MainWindow::onUserConnected(std::string username)
 {
-//    if (QThread::currentThread() != this->thread())
-//    {
-        LOG("I am going to make string");
-        qDebug() << QString::fromStdString(username);
-        emit addUser(QString::fromStdString(username));
-
-
-//    }
+    ui->sessionsList->addItem(QString::fromStdString(username));
 }
 
 void MainWindow::on_connectButton_clicked()
@@ -86,10 +83,8 @@ void MainWindow::on_sendButton_clicked()
 
 void MainWindow::onUserDisconnected(std::string username)
 {
-    QList <QListWidgetItem *> list = ui->sessionsList->findItems(QString::fromStdString(m_messenger->username()), Qt::MatchCaseSensitive);
-    int r = ui->sessionsList->row(list[0]);
-    QListWidgetItem *it = ui->sessionsList->takeItem(r);
-    delete it;
+
+    emit deleteUser(QString::fromStdString(username));
 }
 
 
